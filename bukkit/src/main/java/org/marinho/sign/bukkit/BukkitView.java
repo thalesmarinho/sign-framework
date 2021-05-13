@@ -4,15 +4,12 @@ import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
-import org.marinho.sign.SignHandler;
 import org.marinho.sign.SignView;
 import org.marinho.sign.bukkit.util.Reflection;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
 public class BukkitView extends SignView<Player, Location, Block> {
-
-    private BukkitHandler handler;
 
     public BukkitView(String... text) {
         super(text);
@@ -39,14 +36,9 @@ public class BukkitView extends SignView<Player, Location, Block> {
                 Reflection.callConstructor(Reflection.getClass(Reflection.getPackage()
                         + ".BlockPosition"), block.getX(), block.getY(), block.getZ()));
 
-        handler = new BukkitHandler();
+        BukkitHandler handler = new BukkitHandler();
         handler.inject(player);
 
         BukkitFramework.getInstance().register(player, this);
-    }
-
-    @Override
-    public SignHandler<Player> getHandler() {
-        return handler;
     }
 }
