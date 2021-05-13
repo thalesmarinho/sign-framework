@@ -1,0 +1,8 @@
+logger.lifecycle("""
+=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+- Welcome to sign-framework build -
+-                                 -
+-  If you encounterd any problem  -
+- ask me on discord: diparis#9654 -
+=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+""")

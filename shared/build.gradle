@@ -1,0 +1,14 @@
+plugins {
+    id 'java-library'
+}
+
+def LOMBOK_VERSION =  '1.18.20'
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    compileOnly group: 'org.projectlombok', name: 'lombok', version: LOMBOK_VERSION
+    annotationProcessor group: 'org.projectlombok', name: 'lombok', version: LOMBOK_VERSION
+}

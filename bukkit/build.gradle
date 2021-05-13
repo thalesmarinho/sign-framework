@@ -1,0 +1,28 @@
+plugins {
+    id 'java-library'
+    id 'com.github.johnrengelman.shadow' version '6.0.0'
+}
+
+tasks.build.dependsOn('shadowJar')
+
+def BUKKIT_VERSION = '1.8-R0.1-SNAPSHOT'
+def NETTY_VERSION = '4.1.24.Final'
+
+repositories {
+    mavenCentral()
+
+    maven {
+        url 'https://hub.spigotmc.org/nexus/content/groups/public/'
+    }
+}
+
+dependencies {
+    compileOnly group: 'org.bukkit', name: 'bukkit', version: BUKKIT_VERSION
+    compileOnly group: 'io.netty', name: 'netty-all', version: NETTY_VERSION
+
+    implementation project(':shared')
+}
+
+shadowJar {
+    archiveName("${rootProject.name}-${rootProject.version}.jar")
+}

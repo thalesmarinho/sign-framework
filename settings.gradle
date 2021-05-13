@@ -1,0 +1,4 @@
+rootProject.name = 'sign-framework'
+
+include 'shared'
+include 'bukkit'
