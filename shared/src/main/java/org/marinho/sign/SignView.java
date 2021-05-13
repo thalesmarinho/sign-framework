@@ -2,6 +2,7 @@ package org.marinho.sign;
 
 import lombok.Getter;
 import lombok.Setter;
+import lombok.experimental.Accessors;
 
 import java.util.Arrays;
 import java.util.List;
@@ -16,6 +17,9 @@ public abstract class SignView<P, L, B> {
 
     protected L location;
     protected B block;
+
+    @Accessors(fluent = true)
+    protected boolean retryIfFail;
 
     public SignView(String... text) {
         String[] array;
@@ -38,7 +42,12 @@ public abstract class SignView<P, L, B> {
         return (T) this;
     }
 
+    public <T extends SignView<P, L, B>> T retryIfFail(boolean state) {
+        this.retryIfFail = state;
+
+        return (T) this;
+    }
+
     public abstract void open(P player);
-    public abstract SignHandler<P> getHandler();
 
 }
