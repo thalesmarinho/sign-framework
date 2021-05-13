@@ -49,16 +49,17 @@ public class BukkitHandler implements SignHandler<Player> {
                 for(int i = 0; i < components.length; i++)
                     text[i] = (String) Reflection.invokeMethod(components[i], "getText");
 
-                view.getResponse().and((player, value) -> { eject(player);
-                    Block block = view.getBlock();
+                boolean success = view.getResponse().test(player, text);
 
-                    Material material = block == null ? Material.AIR : block.getType();
-                    byte data = block == null ? (byte) 0 : block.getData();
+                if(view.retryIfFail() && !success)
+                    view.open(player);
 
-                    player.sendBlockChange(view.getLocation(), material, data);
+                Block block = view.getBlock();
 
-                    return true;
-                }).test(player, text);
+                Material material = block == null ? Material.AIR : block.getType();
+                byte data = block == null ? (byte) 0 : block.getData();
+
+                player.sendBlockChange(view.getLocation(), material, data);
 
                 out.add(packet);
             }
