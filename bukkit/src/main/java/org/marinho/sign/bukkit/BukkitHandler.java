@@ -19,9 +19,18 @@ public class BukkitHandler implements SignHandler<Player> {
     public void inject(Player player) {
         checkNotNull(player);
 
+        if(!player.isOnline()) {
+            BukkitView view = BukkitFramework.getInstance().unregister(player);
+
+            if(view != null)
+                view.getPlayers().remove(player);
+
+            return;
+        }
+
         Channel channel = Reflection.getChannel(player);
 
-        if(channel == null)
+        if(channel.pipeline().get("update_sign") != null)
             return;
 
         channel.pipeline().addAfter("decoder", "update_sign", new MessageToMessageDecoder() {
@@ -31,30 +40,39 @@ public class BukkitHandler implements SignHandler<Player> {
                 if(!packet.toString().contains("PacketPlayInUpdateSign"))
                     return;
 
-                BukkitView view = BukkitFramework.getInstance().unregister(player);
+                BukkitView view = BukkitFramework.getInstance().get(player);
 
                 if(view == null)
                     return;
-
-                Object[] components = (Object[]) Reflection.invokeMethod(packet, "b");
-
-                if (components == null || components.length <= 0) {
-                    eject(player);
+                else if(view.isUpdating()) {
+                    view.setUpdating(false);
 
                     return;
                 }
 
+                BukkitFramework.getInstance().unregister(player);
+                view.getPlayers().remove(player);
+
+                eject(player);
+
+                Object[] components = (Object[]) Reflection.invoke(packet, "b");
+
+                if (components == null || components.length <= 0)
+                    return;
+
                 String[] text = new String[components.length];
 
                 for(int i = 0; i < components.length; i++)
-                    text[i] = (String) Reflection.invokeMethod(components[i], "getText");
+                    text[i] = (String) Reflection.invoke(components[i], "getText");
 
-                boolean success = view.getResponse().test(player, text);
+                if(view.getResponse() != null) {
+                    boolean success = view.getResponse().test(player, text);
 
-                if(view.retryIfFail() && !success)
-                    view.open(player);
+                    if (view.retryIfFail() && !success)
+                        view.open(player);
+                }
 
-                Block block = view.getBlock();
+                Block block = view.getLocation().getBlock();
 
                 Material material = block == null ? Material.AIR : block.getType();
                 byte data = block == null ? (byte) 0 : block.getData();

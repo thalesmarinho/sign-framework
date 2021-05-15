@@ -13,32 +13,38 @@ public class BukkitView extends SignView<Player, Location, Block> {
 
     public BukkitView(String... text) {
         super(text);
+
+        handler = new BukkitHandler();
     }
 
     @Override
     public void open(Player player) {
         checkNotNull(player);
 
-        this.location = player.getLocation().clone()
+        if(!players.contains(player))
+            players.add(player);
+
+        location = player.getLocation().clone()
                 .subtract(0, 5, 0);
 
-        Block block = location.getBlock();
-
-        if(block != null && !block.getType().equals(Material.AIR))
-            this.block = block;
-
+        player.closeInventory();
         player.sendBlockChange(location, Material.SIGN_POST, (byte) 0);
         player.sendSignChange(location, text);
 
-        assert block != null;
-
         Reflection.sendPacket(player, "PacketPlayOutOpenSignEditor",
-                Reflection.callConstructor(Reflection.getClass(Reflection.getPackage()
-                        + ".BlockPosition"), block.getX(), block.getY(), block.getZ()));
+                Reflection.newInstance("BlockPosition", location.getX(),
+                        location.getY(), location.getZ()));
 
-        BukkitHandler handler = new BukkitHandler();
         handler.inject(player);
 
         BukkitFramework.getInstance().register(player, this);
+    }
+
+    @Override
+    public void update() {
+        for(Player player : players) {
+            setUpdating(true);
+            open(player);
+        }
     }
 }
