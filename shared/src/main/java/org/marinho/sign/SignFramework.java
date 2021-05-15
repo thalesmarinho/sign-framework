@@ -16,4 +16,8 @@ public abstract class SignFramework<P, S> {
     public S unregister(P player) {
         return signs.remove(player);
     }
+
+    public S get(P player) {
+        return signs.get(player);
+    }
 }
