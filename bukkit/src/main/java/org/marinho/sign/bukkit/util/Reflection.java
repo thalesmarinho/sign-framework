@@ -1,7 +1,7 @@
 package org.marinho.sign.bukkit.util;
 
+import com.google.common.primitives.Primitives;
 import io.netty.channel.Channel;
-import org.apache.commons.lang.ClassUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 
@@ -9,87 +9,148 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 
+/**
+ * Helper class to reflection for bukkit
+ *
+ * @since 1.0.0
+ */
 public class Reflection {
 
-    public static String getPackage() {
+    private final static String nms;
+
+    static {
         String pkg = Bukkit.getServer().getClass().getPackage().getName();
         String version = pkg.substring(pkg.lastIndexOf(".") + 1);
 
-        return "net.minecraft.server." + version;
+        nms = "net.minecraft.server." + version + ".";
     }
 
-    public static Class<?>[] toParamTypes(Object... params) {
-        Class<?>[] classes = new Class<?>[params.length];
-
-        for (int i = 0; i < params.length; i++)
-            classes[i] = ClassUtils.wrapperToPrimitive(params[i].getClass());
-
-        return classes;
-    }
-
-    public static void sendPacket(Player player, String name, Object... params) {
-        Object connection = getConnection(player);
-
+    /**
+     * Sends a packet to a player, with the arguments presented.
+     *
+     * @param player The player who will receive the packet
+     * @param name   The name of the method to invoke
+     * @param args   The arguments to be provided to the packet
+     * @since 1.0.0
+     */
+    public static void sendPacket(Player player, String name, Object... args) {
         try {
-            connection.getClass().getMethod("sendPacket", getClass(getPackage() +
-                    ".Packet")).invoke(connection, callConstructor(getClass(getPackage() +
-                    "." + name), params));
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
+            Object connection = getField(invoke(player, "getHandle"), "playerConnection");
+            assert connection != null;
 
-    public static Object invokeMethod(Object object, String name, Object... params) {
-        try {
-            Method method = object.getClass().getDeclaredMethod(name, toParamTypes(params));
-            method.setAccessible(true);
-
-            return method.invoke(object, params);
+            connection.getClass().getMethod("sendPacket", getClass("Packet"))
+                    .invoke(connection, newInstance(name, args));
         } catch (Exception exception) {
             exception.printStackTrace();
-
-            return null;
         }
     }
 
-    public static Object callConstructor(Class<?> clazz, Object... params) {
-        try {
-            Constructor<?> connection = clazz.getDeclaredConstructor(toParamTypes(params));
-            connection.setAccessible(true);
-
-            return connection.newInstance(params);
-        } catch (Exception exception) {
-            exception.printStackTrace();
-
-            return null;
-        }
-    }
-
-    public static Object getConnection(Player player) {
-        return getField(invokeMethod(player, "getHandle"), "playerConnection");
-    }
-
+    /**
+     * Returns the player's {@link io.netty.channel.Channel}.
+     *
+     * @param player The player that we are going to get the channel
+     * @return The player's {@link io.netty.channel.Channel}
+     * @since 1.0.0
+     */
     public static Channel getChannel(Player player) {
-        Object connection = getConnection(player);
+        Object connection = getField(invoke(player, "getHandle"),
+                "playerConnection");
         Object network = getField(connection, "networkManager");
 
         return (Channel) getField(network, "channel");
     }
 
+    /**
+     * Convert the given objects to type parameter and
+     * cast their primitives.
+     *
+     * @param args The arguments to convert and cast
+     * @return The converted arguments
+     * @since 1.0.0
+     */
+    public static Class<?>[] toPrimitives(Object... args) {
+        Class<?>[] classes = new Class<?>[args.length];
+
+        for (int i = 0; i < args.length; i++)
+            classes[i] = Primitives.unwrap(args[i].getClass());
+
+        return classes;
+    }
+
+    /**
+     * Invokes a method with the arguments presented.
+     *
+     * @param clazz The class where the method is
+     * @param name  The name of the method
+     * @param args  The arguments to be provided to the method
+     * @return <code>null</code> or the result of invoking the method
+     * @since 1.0.0
+     */
+    public static Object invoke(Object clazz, String name, Object... args) {
+        try {
+            Method method = clazz.getClass().getDeclaredMethod(name, toPrimitives(args));
+            method.setAccessible(true);
+
+            return method.invoke(clazz, args);
+        } catch (Exception exception) {
+            exception.printStackTrace();
+
+            return null;
+        }
+    }
+
+    /**
+     * Instantiates an object with the arguments presented.
+     *
+     * @param name The name of the class
+     * @param args The arguments to be provided when instantiating
+     * @return 1.0.0
+     */
+    public static Object newInstance(String name, Object... args) {
+        try {
+            Class<?> clazz = getClass(name);
+            assert clazz != null;
+
+            Constructor<?> constructor = clazz.getDeclaredConstructor(toPrimitives(args));
+            constructor.setAccessible(true);
+
+            return constructor.newInstance(args);
+        } catch (Exception exception) {
+            exception.printStackTrace();
+
+            return null;
+        }
+    }
+
+    /**
+     * Gets the class by the given name.
+     *
+     * @param name The name of the class
+     * @return The class with the given name
+     * @since 1.0.0
+     */
     public static Class<?> getClass(String name) {
         try {
-            return Class.forName(name);
+            return Class.forName(nms + name);
         } catch (Exception exception) {
             return null;
         }
     }
 
-    public static Object getField(Object object, String field) {
+    /**
+     * Gets the contents of the field by the given name.
+     *
+     * @param clazz The class where the field is
+     * @param name  The name of the field
+     * @return The field's content
+     * @since 1.0.0
+     */
+    public static Object getField(Object clazz, String name) {
         try {
-            Field f = object.getClass().getDeclaredField(field);
-            f.setAccessible(true);
+            Field field = clazz.getClass().getDeclaredField(name);
+            field.setAccessible(true);
 
-            return f.get(object);
+            return field.get(clazz);
         } catch (Exception exception) {
             exception.printStackTrace();
 
